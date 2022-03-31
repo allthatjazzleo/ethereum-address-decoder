@@ -20,6 +20,7 @@ import (
 const abiJSON = `[{"inputs":[{"internalType":"string","name":"recipient","type":"string"}],"name":"send_cro_to_crypto_org","outputs":[],"stateMutability":"payable","type":"function"}]`
 const blocktimeString = "2022-03-28T15:45:02.835813016Z"
 const denom = "transfer/channel-0/basecro"
+const methodName = "send_cro_to_crypto_org"
 
 // Example Legacy tx:
 const txJSON = `
@@ -111,7 +112,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	recipient, _ := abi.Methods["send_cro_to_crypto_org"].Inputs.Unpack(data[4:])
+	recipient, _ := abi.Methods[methodName].Inputs.Unpack(data[4:])
 
 	// get ibc timeout timestamp
 	blocktime, err := time.Parse(time.RFC3339Nano, blocktimeString)

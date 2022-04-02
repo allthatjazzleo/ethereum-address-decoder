@@ -12,13 +12,14 @@ import (
 	"strings"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
 const abiJSON = `[{"inputs":[{"internalType":"string","name":"recipient","type":"string"}],"name":"send_cro_to_crypto_org","outputs":[],"stateMutability":"payable","type":"function"}]`
-const blocktimeString = "2022-03-28T15:45:02.835813016Z"
+const blocktimeString = "2022-04-02T03:21:33.94019933Z"
 const denom = "transfer/channel-0/basecro"
 const methodName = "send_cro_to_crypto_org"
 
@@ -28,21 +29,31 @@ const txJSON = `
 	"@type": "/ethermint.evm.v1.MsgEthereumTx",
 	"data": {
 		"@type": "/ethermint.evm.v1.LegacyTx",
-		"nonce": "332",
+		"nonce": "91",
 		"gas_price": "5000000000000",
 		"gas": "33578",
 		"to": "0x6b1b50c2223eb31E0d4683b046ea9C6CB0D0ea4F",
-		"value": "102030243391546367224",
-		"data": "xBzCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpjcm8xNzZxOGFtNmM4aHNrNHIyazR2c21xODBoYXBra3U1M3l5NnVoZm0AAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		"value": "20000000000000000000",
+		"data": "xBzCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpjcm8xNjZxc2cwenFlOGM2bmE3ZnZjem1ydmprdzRoemNoemV2M3R4ZzgAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
 		"v": "VQ==",
-		"r": "iP76vlA2inv1keUSgS4WA9o3rJQn+H57mnDNJO/FeNY=",
-		"s": "T8t898tl+P4aFmsop/KR2JgG8rt8EG7Znhh3IgFN7jo="
+		"r": "14gWo3532OdP+rZmqQ+iAEFTPftdaikzu6AINO2iAyI=",
+		"s": "Q9Qjhgpx/PC55nsnp2fPGoXbaqNA1g1rqKSWY6XvlNk="
 	},
-	"size": 247,
-	"hash": "0xcdd1b6fe327e5c17e11be724768452c41bc9e6906cb105ded82a42cdacbbaaef",
+	"size": 245,
+	"hash": "0xf6c22dbd922b437c8e30263ed1ff6253909931f88f87f70d88b3e6ae91930308",
 	"from": ""
 }
 `
+
+const (
+	// Bech32Prefix defines the Bech32 prefix used for Cronos Accounts
+	Bech32Prefix = "crc"
+
+	// Bech32PrefixAccAddr defines the Bech32 prefix of an account's address
+	Bech32PrefixAccAddr = Bech32Prefix
+	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
+	Bech32PrefixAccPub = Bech32Prefix + sdk.PrefixPublic
+)
 
 type Tx struct {
 	Data Data `json:"data"`
@@ -123,12 +134,14 @@ func main() {
 	amount := tx.Data.Value[0 : len(tx.Data.Value)-10]
 
 	// get base64 encoded ibc data
-	ibcData := fmt.Sprintf(`{"amount":"%v","denom":"%v","receiver":"%v","sender":"%v"}`, amount, denom, recipient[0], sender)
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
+	ibcData := fmt.Sprintf(`{"amount":"%v","denom":"%v","receiver":"%v","sender":"%s"}`, amount, denom, recipient[0], sdk.AccAddress(sender.Bytes()))
 
 	// get base64 encoded ibc data
 	ibcDataBase64 := base64.StdEncoding.EncodeToString([]byte(ibcData))
 
-	fmt.Printf("sender address: 0x%x\n", sender)
+	fmt.Printf("sender address: %s\n", sdk.AccAddress(sender.Bytes()))
 	fmt.Printf("recipient address: %v\n", recipient[0])
 	fmt.Printf("amount: %v\n", amount)
 	fmt.Printf("timeout timestamp: %v\n", blocktime.UnixNano()+86400000000000)

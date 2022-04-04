@@ -18,31 +18,32 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-const abiJSON = `[{"inputs":[{"internalType":"string","name":"recipient","type":"string"}],"name":"send_cro_to_crypto_org","outputs":[],"stateMutability":"payable","type":"function"}]`
-const blocktimeString = "2022-04-02T03:21:33.94019933Z"
-const denom = "transfer/channel-0/basecro"
-const methodName = "send_cro_to_crypto_org"
+var abiJSON = `[{"inputs":[{"internalType":"string","name":"recipient","type":"string"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"send_to_ibc","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
+
+var blocktimeString = "2022-04-03T21:27:20.094446044Z"
+
+var denom = "transfer/channel-0/basecro"
 
 // Example Legacy tx:
-const txJSON = `
-{
-	"@type": "/ethermint.evm.v1.MsgEthereumTx",
-	"data": {
-		"@type": "/ethermint.evm.v1.LegacyTx",
-		"nonce": "91",
-		"gas_price": "5000000000000",
-		"gas": "33578",
-		"to": "0x6b1b50c2223eb31E0d4683b046ea9C6CB0D0ea4F",
-		"value": "20000000000000000000",
-		"data": "xBzCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpjcm8xNjZxc2cwenFlOGM2bmE3ZnZjem1ydmprdzRoemNoemV2M3R4ZzgAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-		"v": "VQ==",
-		"r": "14gWo3532OdP+rZmqQ+iAEFTPftdaikzu6AINO2iAyI=",
-		"s": "Q9Qjhgpx/PC55nsnp2fPGoXbaqNA1g1rqKSWY6XvlNk="
-	},
-	"size": 245,
-	"hash": "0xf6c22dbd922b437c8e30263ed1ff6253909931f88f87f70d88b3e6ae91930308",
-	"from": ""
-}
+var txJSON = `
+            {
+              "@type": "/ethermint.evm.v1.MsgEthereumTx",
+              "data": {
+                "@type": "/ethermint.evm.v1.LegacyTx",
+                "nonce": "0",
+                "gas_price": "5000000000000",
+                "gas": "27982",
+                "to": "0x6b1b50c2223eb31E0d4683b046ea9C6CB0D0ea4F",
+                "value": "660090000000000000",
+                "data": "xBzCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpjcm8xeGg4emZjMDQyZXMyY2VsZjI3YzhmcDYzYzJnenBjcHB5YXFmN2oAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "v": "VQ==",
+                "r": "be4QYrYWLnWz5YAcevirXJPZ4pzEqk7dXaArXEkvk9k=",
+                "s": "H880+5qcXP3ImO1xu0BJEVgmUz8zuEZVCNiSf4hJpdw="
+              },
+              "size": 244,
+              "hash": "0xb08c8cbc9151164aa42551929629f860bd6a19dd832295d338f481ef062cf6c7",
+              "from": ""
+            }
 `
 
 const (
@@ -72,6 +73,20 @@ type Data struct {
 }
 
 func main() {
+
+	// set var from env if any
+	if _abi := os.Getenv("ABI"); _abi != "" {
+		abiJSON = _abi
+	}
+	if _denom := os.Getenv("DENOM"); _denom != "" {
+		denom = _denom
+	}
+	if _blocktime := os.Getenv("BLOCKTIME"); _blocktime != "" {
+		blocktimeString = _blocktime
+	}
+	if _tx := os.Getenv("TX"); _tx != "" {
+		txJSON = _tx
+	}
 
 	var tx Tx
 	err := json.Unmarshal([]byte(txJSON), &tx)
@@ -123,7 +138,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	recipient, _ := abi.Methods[methodName].Inputs.Unpack(data[4:])
+	var methodName string
+	for k, _ := range abi.Methods {
+		methodName = k
+	}
+	input, _ := abi.Methods[methodName].Inputs.Unpack(data[4:])
 
 	// get ibc timeout timestamp
 	blocktime, err := time.Parse(time.RFC3339Nano, blocktimeString)
@@ -131,18 +150,23 @@ func main() {
 		fmt.Println("Could not parse time:", err)
 	}
 
-	amount := tx.Data.Value[0 : len(tx.Data.Value)-10]
+	var amount interface{}
+	if methodName == "send_cro_to_crypto_org" {
+		amount = tx.Data.Value[0 : len(tx.Data.Value)-10]
+	} else {
+		amount = input[1]
+	}
 
 	// get base64 encoded ibc data
 	config := sdk.GetConfig()
 	config.SetBech32PrefixForAccount(Bech32PrefixAccAddr, Bech32PrefixAccPub)
-	ibcData := fmt.Sprintf(`{"amount":"%v","denom":"%v","receiver":"%v","sender":"%s"}`, amount, denom, recipient[0], sdk.AccAddress(sender.Bytes()))
+	ibcData := fmt.Sprintf(`{"amount":"%v","denom":"%v","receiver":"%v","sender":"%s"}`, amount, denom, input[0], sdk.AccAddress(sender.Bytes()))
 
 	// get base64 encoded ibc data
 	ibcDataBase64 := base64.StdEncoding.EncodeToString([]byte(ibcData))
 
 	fmt.Printf("sender address: %s\n", sdk.AccAddress(sender.Bytes()))
-	fmt.Printf("recipient address: %v\n", recipient[0])
+	fmt.Printf("recipient address: %v\n", input[0])
 	fmt.Printf("amount: %v\n", amount)
 	fmt.Printf("timeout timestamp: %v\n", blocktime.UnixNano()+86400000000000)
 

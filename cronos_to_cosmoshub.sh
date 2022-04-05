@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 
-export ABI='[{"inputs":[{"internalType":"string","name":"recipient","type":"string"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"send_to_ibc","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
-
-export DENOM='transfer/channel-1/uatom'
-
-export BLOCKTIME='2022-04-03T21:27:20.094446044Z'
-
+# change me 
+export BLOCK_HEIGHT='2193925'
 export TX='
             {
               "@type": "/ethermint.evm.v1.MsgEthereumTx",
@@ -26,5 +22,11 @@ export TX='
               "from": ""
             }
 '
+
+
+# should be fixed
+export BLOCKTIME=$(curl -s "https://rpc.cronos.org/block?height=$BLOCK_HEIGHT" | jq -r .result.block.header.time)
+export ABI='[{"inputs":[{"internalType":"string","name":"recipient","type":"string"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"send_to_ibc","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
+export DENOM='transfer/channel-1/uatom'
 
 go run main.go

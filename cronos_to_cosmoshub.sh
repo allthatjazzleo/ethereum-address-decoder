@@ -29,6 +29,6 @@ export TX='
 # should be fixed
 export BLOCKTIME=$(curl -s "https://rpc.cronos.org/block?height=$BLOCK_HEIGHT" | jq -r .result.block.header.time)
 export ABI='[{"inputs":[{"internalType":"string","name":"recipient","type":"string"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"send_to_ibc","outputs":[],"stateMutability":"nonpayable","type":"function"}]'
-export DENOM='transfer/channel-1/uatom'
+export IBC_DENOM='transfer/channel-1/uatom'
 
 go run main.go

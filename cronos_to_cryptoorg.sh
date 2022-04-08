@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # change me 
-export BLOCK_HEIGHT='2193925'
+export BLOCK_HEIGHT='2233392'
 export TX='
 [
   {
@@ -47,6 +47,6 @@ export TX='
 # should be fixed
 export BLOCKTIME=$(curl -s "https://rpc.cronos.org/block?height=$BLOCK_HEIGHT" | jq -r .result.block.header.time)
 export ABI='[{"inputs":[{"internalType":"string","name":"recipient","type":"string"}],"name":"send_cro_to_crypto_org","outputs":[],"stateMutability":"payable","type":"function"}]'
-export DENOM='transfer/channel-0/basecro'
+export IBC_DENOM='transfer/channel-0/basecro'
 
 go run main.go

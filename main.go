@@ -26,24 +26,26 @@ var denom = "transfer/channel-0/basecro"
 
 // Example Legacy tx:
 var txJSON = `
-            {
-              "@type": "/ethermint.evm.v1.MsgEthereumTx",
-              "data": {
-                "@type": "/ethermint.evm.v1.LegacyTx",
-                "nonce": "0",
-                "gas_price": "5000000000000",
-                "gas": "27982",
-                "to": "0x6b1b50c2223eb31E0d4683b046ea9C6CB0D0ea4F",
-                "value": "660090000000000000",
-                "data": "xBzCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpjcm8xeGg4emZjMDQyZXMyY2VsZjI3YzhmcDYzYzJnenBjcHB5YXFmN2oAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                "v": "VQ==",
-                "r": "be4QYrYWLnWz5YAcevirXJPZ4pzEqk7dXaArXEkvk9k=",
-                "s": "H880+5qcXP3ImO1xu0BJEVgmUz8zuEZVCNiSf4hJpdw="
-              },
-              "size": 244,
-              "hash": "0xb08c8cbc9151164aa42551929629f860bd6a19dd832295d338f481ef062cf6c7",
-              "from": ""
-            }
+[
+	{
+		"@type": "/ethermint.evm.v1.MsgEthereumTx",
+		"data": {
+			"@type": "/ethermint.evm.v1.LegacyTx",
+			"nonce": "0",
+			"gas_price": "5000000000000",
+			"gas": "27982",
+			"to": "0x6b1b50c2223eb31E0d4683b046ea9C6CB0D0ea4F",
+			"value": "660090000000000000",
+			"data": "xBzCcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACpjcm8xeGg4emZjMDQyZXMyY2VsZjI3YzhmcDYzYzJnenBjcHB5YXFmN2oAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+			"v": "VQ==",
+			"r": "be4QYrYWLnWz5YAcevirXJPZ4pzEqk7dXaArXEkvk9k=",
+			"s": "H880+5qcXP3ImO1xu0BJEVgmUz8zuEZVCNiSf4hJpdw="
+		},
+		"size": 244,
+		"hash": "0xb08c8cbc9151164aa42551929629f860bd6a19dd832295d338f481ef062cf6c7",
+		"from": ""
+	}
+]
 `
 
 const (
@@ -72,13 +74,21 @@ type Data struct {
 	S        string `json:"s"`
 }
 
+type DecodedData struct {
+	Sender           string      `json:"sender"`
+	Recipient        string      `json:"recipient"`
+	Amount           interface{} `json:"amount"`
+	TimeoutTimestamp int64       `json:"timeout_timestamp"`
+	IbcData          string      `json:"ibc_data"`
+}
+
 func main() {
 
 	// set var from env if any
 	if _abi := os.Getenv("ABI"); _abi != "" {
 		abiJSON = _abi
 	}
-	if _denom := os.Getenv("DENOM"); _denom != "" {
+	if _denom := os.Getenv("IBC_DENOM"); _denom != "" {
 		denom = _denom
 	}
 	if _blocktime := os.Getenv("BLOCKTIME"); _blocktime != "" {
@@ -169,12 +179,18 @@ func main() {
 		// get base64 encoded ibc data
 		ibcDataBase64 := base64.StdEncoding.EncodeToString([]byte(ibcData))
 
-		fmt.Printf("sender address: %s\n", sdk.AccAddress(sender.Bytes()))
-		fmt.Printf("recipient address: %v\n", input[0])
-		fmt.Printf("amount: %v\n", amount)
-		fmt.Printf("timeout timestamp: %v\n", blocktime.UnixNano()+86400000000000)
-
-		fmt.Printf("ibc data: %v\n\n", ibcDataBase64)
+		decodedData := DecodedData{
+			Sender:           sdk.AccAddress(sender.Bytes()).String(),
+			Recipient:        input[0].(string),
+			Amount:           amount,
+			TimeoutTimestamp: blocktime.UnixNano() + 86400000000000,
+			IbcData:          ibcDataBase64,
+		}
+		val, err := json.MarshalIndent(decodedData, "", "    ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s\n", string(val))
 	}
 
 }

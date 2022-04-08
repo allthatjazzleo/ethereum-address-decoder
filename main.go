@@ -78,7 +78,7 @@ type DecodedData struct {
 	Sender           string      `json:"sender"`
 	Recipient        string      `json:"recipient"`
 	Amount           interface{} `json:"amount"`
-	TimeoutTimestamp int64       `json:"timeout_timestamp"`
+	TimeoutTimestamp string      `json:"timeout_timestamp"`
 	IbcData          string      `json:"ibc_data"`
 }
 
@@ -183,7 +183,7 @@ func main() {
 			Sender:           sdk.AccAddress(sender.Bytes()).String(),
 			Recipient:        input[0].(string),
 			Amount:           amount,
-			TimeoutTimestamp: blocktime.UnixNano() + 86400000000000,
+			TimeoutTimestamp: strconv.FormatInt(blocktime.UnixNano()+86400000000000, 10),
 			IbcData:          ibcDataBase64,
 		}
 		val, err := json.MarshalIndent(decodedData, "", "    ")

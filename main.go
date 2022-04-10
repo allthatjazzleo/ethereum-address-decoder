@@ -161,6 +161,11 @@ func main() {
 		}
 		input, _ := abi.Methods[methodName].Inputs.Unpack(data[4:])
 
+		// input sanity check
+		if len(input) == 0 {
+			continue
+		}
+
 		var amount interface{}
 		if methodName == "send_cro_to_crypto_org" {
 			amount = tx.Data.Value[0 : len(tx.Data.Value)-10]
@@ -168,8 +173,8 @@ func main() {
 			amount = input[1]
 		}
 
-		// sanity check
-		if len(input) == 0 || fmt.Sprintf("%v", amount) == "0" {
+		// amount sanity check
+		if fmt.Sprintf("%v", amount) == "0" {
 			continue
 		}
 

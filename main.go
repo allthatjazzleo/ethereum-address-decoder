@@ -160,15 +160,17 @@ func main() {
 			methodName = k
 		}
 		input, _ := abi.Methods[methodName].Inputs.Unpack(data[4:])
-		if len(input) == 0 {
-			continue
-		}
 
 		var amount interface{}
 		if methodName == "send_cro_to_crypto_org" {
 			amount = tx.Data.Value[0 : len(tx.Data.Value)-10]
 		} else {
 			amount = input[1]
+		}
+
+		// sanity check
+		if len(input) == 0 || fmt.Sprintf("%v", amount) == "0" {
+			continue
 		}
 
 		// get base64 encoded ibc data
